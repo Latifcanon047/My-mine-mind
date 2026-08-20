@@ -11,18 +11,61 @@ model MindMap {
   id        String   @id @default(cuid())
   title     String
   content   Json     @default("{}")
+  canvasTheme String   @default("dark") 
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
+  collaborators MindMapCollaborator[]
+  shareLinks    ShareLink[]
 }
 
 model User {
-  id        String    @id @default(cuid())
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String?
+  googleId      String?   @unique
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  mindMaps      MindMap[]
+  collaboratingOn MindMapCollaborator[]
+}
+
+model PendingRegistration {
+  id        String   @id @default(cuid())
   name      String
-  email     String    @unique
+  email     String   @unique
   password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  mindMaps  MindMap[]
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum CollaboratorRole {
+  EDITOR
+  VIEWER
+}
+
+model MindMapCollaborator {
+  id        String           @id @default(cuid())
+  mindMapId String
+  mindMap   MindMap          @relation(fields: [mindMapId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      CollaboratorRole
+  invitedAt DateTime         @default(now())
+
+  @@unique([mindMapId, userId])
+}
+
+model ShareLink {
+  id        String           @id @default(cuid())
+  mindMapId String
+  mindMap   MindMap          @relation(fields: [mindMapId], references: [id], onDelete: Cascade)
+  token     String           @unique @default(cuid())
+  role      CollaboratorRole
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
 }
